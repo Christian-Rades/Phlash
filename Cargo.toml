@@ -7,7 +7,9 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-ext-php-rs = "*"
+anyhow = "1.0.69"
+ext-php-rs = { version = "0.10", features = ["anyhow"]}
+lightningcss = "1.0.0-alpha.39"
 
 [profile.release]
 strip = "debuginfo"
