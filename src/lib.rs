@@ -1,25 +1,42 @@
 #![cfg_attr(windows, feature(abi_vectorcall))]
+use std::collections::HashSet;
+
 use anyhow::{anyhow, Result};
 use ext_php_rs::prelude::*;
 
 use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
+use lightningcss::targets::Browsers;
 
-#[php_function]
-pub fn hello_world(name: &str) -> String {
-    format!("Hello, {}!", name)
+#[php_class(name = "Phlash\\CssTransformer")]
+struct CssTransformer {
+    browsers: Browsers,
+    minify: bool,
 }
 
-#[php_function]
-pub fn transform(styles: &str) -> Result<String> {
-    let mut css =
-        StyleSheet::parse(styles, ParserOptions::default()).map_err(|err| anyhow!("{}", err))?;
+#[php_impl]
+impl CssTransformer {
+    pub fn __construct() -> Self {
+        CssTransformer {
+            browsers: Browsers::default(),
+            minify: true,
+        }
+    }
+    pub fn transform(&self, styles: &str) -> Result<String> {
+        let mut css = StyleSheet::parse(styles, ParserOptions::default())
+            .map_err(|err| anyhow!("{}", err))?;
 
-    css.minify(MinifyOptions::default())?;
+        let minify_conf = MinifyOptions {
+            targets: Some(self.browsers.clone()),
+            unused_symbols: HashSet::default(),
+        };
 
-    let mut config = PrinterOptions::default();
-    config.minify = true;
+        css.minify(minify_conf)?;
 
-    Ok(css.to_css(config)?.code)
+        let mut config = PrinterOptions::default();
+        config.minify = self.minify;
+
+        Ok(css.to_css(config)?.code)
+    }
 }
 
 #[php_module]
